@@ -27,6 +27,19 @@
       </button>
     </nav>
 
+    <div class="kullanici-alani">
+      {% if session.username %}
+        <span>Merhaba, {{ session.username }}{% if session.role == "admin" %} (admin){% endif %}</span>
+        {% if session.role == "admin" %}
+          <a href="{{ url_for('admin_paneli') }}">Admin Paneli</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}">Çıkış Yap</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Giriş Yap</a>
+        <a href="{{ url_for('register') }}">Kayıt Ol</a>
+      {% endif %}
+    </div>
+
   </header>
 
 

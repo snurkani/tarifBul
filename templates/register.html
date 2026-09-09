@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kayıt Ol - Tarif Bul</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <header class="ust-menu">
+    <h1>Tarif Bul 🍴</h1>
+  </header>
+
+  <section class="auth-alani">
+    <h2>Kayıt Ol</h2>
+
+    {% with mesajlar = get_flashed_messages() %}
+      {% if mesajlar %}
+        <ul class="flash-mesajlar">
+          {% for mesaj in mesajlar %}
+            <li>{{ mesaj }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="auth-form">
+      <input type="text" name="username" placeholder="Kullanıcı adı" required>
+      <input type="password" name="password" placeholder="Şifre" required>
+      <button type="submit">Kayıt Ol</button>
+    </form>
+
+    <p>Zaten hesabın var mı? <a href="{{ url_for('login') }}">Giriş yap</a></p>
+  </section>
+
+</body>
+</html>
