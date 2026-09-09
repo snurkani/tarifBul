@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Tarif Bul</title>
+
+  <!-- CSS dosyamızı bağlıyoruz -->
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+
+<body>
+
+  <!-- ÜST MENÜ -->
+  <header class="ust-menu">
+
+    <h1>Tarif Bul 🍴</h1>
+
+    <nav>
+      <button id="tariflerButon">
+        Tarifler
+      </button>
+
+      <button id="favorilerButon">
+        Favoriler ❤️
+      </button>
+    </nav>
+
+  </header>
+
+
+  <!-- TARİFLER SAYFASI -->
+  <section id="tarifSayfasi">
+
+    <div class="arama-alani">
+
+      <input
+        type="text"
+        id="aramaInput"
+        placeholder="Yemek ara..."
+      >
+
+      <button id="araButon">
+        Ara
+      </button>
+
+    </div>
+
+
+    <!-- API'den gelen tarifler buraya gelecek -->
+    <div id="tarifler" class="tarifler"></div>
+
+    <div class="daha-fazla-alani">
+      <button id="dahaFazlaButon">
+        Daha Fazla Göster
+      </button>
+    </div>
+
+  </section>
+
+
+  <!-- FAVORİLER SAYFASI -->
+  <!-- Başlangıçta gizli -->
+  <section id="favoriSayfasi" class="gizli">
+
+    <h2>Favori Tariflerim ❤️</h2>
+
+
+    <!-- Favori tarifler buraya gelecek -->
+    <div id="favoriler" class="favoriler"></div>
+
+
+    <!-- Favori istatistikleri -->
+    <div class="istatistik">
+
+      <p>
+        Favori Sayısı:
+        <span id="favoriSayisi">0</span>
+      </p>
+
+      <p>
+        Toplam Kalori:
+        <span id="toplamKalori">0</span> kcal
+      </p>
+
+      <p>
+        Ortalama Kalori:
+        <span id="ortalamaKalori">0</span> kcal
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- JavaScript dosyamızı en sonda bağlıyoruz -->
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+//normal html değil falskin kullandığı jinja template sytaxı
+
+</body>
+
+</html>
