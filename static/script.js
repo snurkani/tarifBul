@@ -10,8 +10,7 @@
 // API'den gelen tarifleri burada tutacağız
 let tarifler = [];
 
-// Favoriye eklenen tarifleri burada tutacağız
-const favoriler = [];
+// Favoriye eklenen tarifleri artık DB'de tutuyoruz, burada array yok.
 
 //kaç tarif atlanacağını tutacak
 let offset =0
@@ -273,175 +272,158 @@ aramaInput.addEventListener("keydown", function(event) {
 
 
 // ----------------------------------------------------
-// 7) FAVORİYE EKLEME
+// 7) FAVORİYE EKLEME (artık backend'e POST atıyor)
 // ----------------------------------------------------
 
 function favoriyeEkle(tarifId) {
 
   // API'den gelen tarifler içinde seçilen tarifi buluyoruz
   const secilenTarif = tarifler.find(function(tarif) {
-
     return tarif.id === tarifId;
-
   });
 
-
-  // Aynı tarif favorilerde daha önce var mı kontrol ediyoruz
-  const favorideVarMi = favoriler.find(function(tarif) {
-
-    return tarif.id === tarifId;
-
-  });
-
-
-  // Eğer tarif favorilerde yoksa ekliyoruz
-  if (!favorideVarMi) {
-
-    favoriler.push(secilenTarif);
-
+  if (!secilenTarif) {
+    return;
   }
 
+  // Kalori bilgisini buluyoruz
+  let kalori = 0;
+  if (secilenTarif.nutrition) {
+    const kaloriBilgisi = secilenTarif.nutrition.nutrients.find(function(besin) {
+      return besin.name === "Calories";
+    });
+    if (kaloriBilgisi) {
+      kalori = kaloriBilgisi.amount;
+    }
+  }
 
-  // Favori görünümünü güncelliyoruz
-  favorileriGoster();
+  fetch("/api/favoriler", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      tarif_id: secilenTarif.id,
+      baslik: secilenTarif.title,
+      gorsel_url: secilenTarif.image,
+      kalori: Math.round(kalori),
+      hazirlama_suresi: secilenTarif.readyInMinutes
+    })
+  })
+    .then(function(response) {
+      // Giriş yapılmamışsa backend 401 döner, login'e yönlendiriyoruz
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return null;
+      }
+      return response.json();
+    })
+    .then(function() {
+      // Favoriler sekmesi açıksa listeyi tazele
+      if (!favoriSayfasi.classList.contains("gizli")) {
+        favorileriGoster();
+      }
+    })
+    .catch(function(hata) {
+      console.log("Favoriye eklenirken hata:", hata);
+    });
 }
 
 
 // ----------------------------------------------------
-// 8) FAVORİLERİ EKRANDA GÖSTERME
+// 8) FAVORİLERİ EKRANDA GÖSTERME (artık backend'den GET ile çekiyor)
 // ----------------------------------------------------
 
 function favorileriGoster() {
 
-  // Önce eski favori görüntüsünü temizliyoruz
-  favorilerDiv.innerHTML = "";
+  fetch("/api/favoriler")
+    .then(function(response) {
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return null;
+      }
+      return response.json();
+    })
+    .then(function(favoriler) {
 
+      if (!favoriler) {
+        return;
+      }
 
-  // Favorileri tek tek geziyoruz
-  favoriler.forEach(function(tarif) {
+      // Önce eski favori görüntüsünü temizliyoruz
+      favorilerDiv.innerHTML = "";
 
-    let kalori = 0;
+      // Favorileri tek tek geziyoruz
+      favoriler.forEach(function(tarif) {
 
+        favorilerDiv.innerHTML += `
+          <div class="tarif-karti">
 
-    // Kalori bilgisini buluyoruz
-    if (tarif.nutrition) {
+            <img src="${tarif.gorsel_url}" alt="${tarif.baslik}">
 
-      const kaloriBilgisi = tarif.nutrition.nutrients.find(function(besin) {
+            <h3>${tarif.baslik}</h3>
 
-        return besin.name === "Calories";
+            <p>
+              ${tarif.hazirlama_suresi} dakika
+            </p>
 
+            <p>
+              ${Math.round(tarif.kalori)} kcal
+            </p>
+
+            <button onclick="favoridenSil(${tarif.tarif_id})">
+              Favoriden Sil
+            </button>
+
+          </div>
+        `;
       });
 
+      // Favori sayısını gösteriyoruz
+      favoriSayisi.innerHTML = favoriler.length;
 
-      if (kaloriBilgisi) {
+      // Favorilerin toplam kalorisini reduce() ile hesaplıyoruz
+      const kaloriToplami = favoriler.reduce(function(toplam, tarif) {
+        return toplam + tarif.kalori;
+      }, 0);
 
-        kalori = kaloriBilgisi.amount;
+      // Toplam kaloriyi HTML'e yazıyoruz
+      toplamKalori.innerHTML = Math.round(kaloriToplami);
 
+      // Favori yoksa 0 gösteriyoruz
+      if (favoriler.length === 0) {
+        ortalamaKalori.innerHTML = 0;
+      } else {
+        // Ortalama = toplam kalori / favori sayısı
+        const ortalama = kaloriToplami / favoriler.length;
+        ortalamaKalori.innerHTML = Math.round(ortalama);
       }
-    }
-
-
-    // Favori kartını oluşturuyoruz
-    favorilerDiv.innerHTML += `
-      <div class="tarif-karti">
-
-        <img src="${tarif.image}" alt="${tarif.title}">
-
-        <h3>${tarif.title}</h3>
-
-        <p>
-          ${tarif.readyInMinutes} dakika
-        </p>
-
-        <p>
-          ${Math.round(kalori)} kcal
-        </p>
-
-        <button onclick="favoridenSil(${tarif.id})">
-          Favoriden Sil
-        </button>
-
-      </div>
-    `;
-  });
-
-
-  // Favori sayısını gösteriyoruz
-  favoriSayisi.innerHTML = favoriler.length;
-
-
-  // Favorilerin toplam kalorisini reduce() ile hesaplıyoruz
-  const kaloriToplami = favoriler.reduce(function(toplam, tarif) {
-
-    let kalori = 0;
-
-
-    if (tarif.nutrition) {
-
-      const kaloriBilgisi = tarif.nutrition.nutrients.find(function(besin) {
-
-        return besin.name === "Calories";
-
-      });
-
-
-      if (kaloriBilgisi) {
-
-        kalori = kaloriBilgisi.amount;
-
-      }
-    }
-
-
-    return toplam + kalori;
-
-  }, 0);
-
-
-  // Toplam kaloriyi HTML'e yazıyoruz
-  toplamKalori.innerHTML = Math.round(kaloriToplami);
-
-
-  // Favori yoksa 0 gösteriyoruz
-  if (favoriler.length === 0) {
-
-    ortalamaKalori.innerHTML = 0;
-
-  } else {
-
-    // Ortalama = toplam kalori / favori sayısı
-    const ortalama = kaloriToplami / favoriler.length;
-
-    ortalamaKalori.innerHTML = Math.round(ortalama);
-
-  }
+    })
+    .catch(function(hata) {
+      console.log("Favoriler yüklenirken hata:", hata);
+    });
 }
 
 
 // ----------------------------------------------------
-// 9) FAVORİDEN SİLME
+// 9) FAVORİDEN SİLME (artık backend'e DELETE atıyor)
 // ----------------------------------------------------
 
 function favoridenSil(tarifId) {
 
-  // Silinecek tarifin index numarasını buluyoruz
-  const index = favoriler.findIndex(function(tarif) {
-
-    return tarif.id === tarifId;
-
-  });
-
-
-  // Tarif bulunduysa array'den siliyoruz
-  if (index !== -1) {
-
-    favoriler.splice(index, 1);
-
-  }
-
-
-  // Favorileri yeniden gösteriyoruz
-  favorileriGoster();
+  fetch(`/api/favoriler/${tarifId}`, { method: "DELETE" })
+    .then(function(response) {
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return null;
+      }
+      return response.json();
+    })
+    .then(function() {
+      // Favorileri yeniden gösteriyoruz
+      favorileriGoster();
+    })
+    .catch(function(hata) {
+      console.log("Favoriden silinirken hata:", hata);
+    });
 }
 
 

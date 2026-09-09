@@ -36,6 +36,17 @@ def login_required(f):
     return decorated
 
 
+def api_login_required(f):
+    """API route'ları için: yönlendirme yerine JSON + 401 döner,
+    böylece frontend fetch() ile bunu düzgün yakalayabilir."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if "user_id" not in session:
+            return jsonify({"error": "Giriş yapmalısın"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
 def admin_required(f):
     """login_required'ın üstüne role kontrolü ekliyor."""
     @wraps(f)
@@ -160,6 +171,75 @@ def tarifleri_getir():
     data = response.json()# js benzer ama promise döndürmüyor normal sonucu döndürüyor, senkron çalışıyor
 
     return jsonify(data)# flaskten js ye json cevap döndürüyor
+
+
+# ----------------------------------------------------
+# FAVORİ API ROUTE'LARI (artık DB'ye bağlı, kullanıcıya özel)
+# ----------------------------------------------------
+
+@app.route("/api/favoriler", methods=["GET"])
+@api_login_required
+def favorileri_getir():
+    kullanicinin_favorileri = (
+        Favori.query.filter_by(user_id=session["user_id"])
+        .order_by(Favori.eklenme_tarihi.desc())
+        .all()
+    )
+    return jsonify([
+        {
+            "tarif_id": f.tarif_id,
+            "baslik": f.baslik,
+            "gorsel_url": f.gorsel_url,
+            "kalori": f.kalori,
+            "hazirlama_suresi": f.hazirlama_suresi,
+        }
+        for f in kullanicinin_favorileri
+    ])
+
+
+@app.route("/api/favoriler", methods=["POST"])
+@api_login_required
+def favoriye_ekle():
+    veri = request.get_json()
+
+    if not veri or "tarif_id" not in veri:
+        return jsonify({"error": "tarif_id gerekli"}), 400
+
+    mevcut = Favori.query.filter_by(
+        user_id=session["user_id"], tarif_id=veri["tarif_id"]
+    ).first()
+
+    if mevcut:
+        return jsonify({"message": "Zaten favorilerde"}), 200
+
+    yeni_favori = Favori(
+        user_id=session["user_id"],
+        tarif_id=veri["tarif_id"],
+        baslik=veri.get("baslik"),
+        gorsel_url=veri.get("gorsel_url"),
+        kalori=veri.get("kalori", 0),
+        hazirlama_suresi=veri.get("hazirlama_suresi"),
+    )
+    db.session.add(yeni_favori)
+    db.session.commit()
+
+    return jsonify({"message": "Favorilere eklendi"}), 201
+
+
+@app.route("/api/favoriler/<int:tarif_id>", methods=["DELETE"])
+@api_login_required
+def favoriden_sil(tarif_id):
+    favori = Favori.query.filter_by(
+        user_id=session["user_id"], tarif_id=tarif_id
+    ).first()
+
+    if not favori:
+        return jsonify({"error": "Favori bulunamadı"}), 404
+
+    db.session.delete(favori)
+    db.session.commit()
+
+    return jsonify({"message": "Favorilerden silindi"}), 200
 
 
 if __name__ == "__main__":
