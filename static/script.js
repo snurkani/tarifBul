@@ -284,7 +284,7 @@ function oneCikanlariGetir() {
     })
     .then(function(data) {
 
-      const sonuclar = (data.results || []).slice(0, 6);
+      const sonuclar = data.results || [];
       oneCikanListesi = sonuclar;
 
       populerTariflerDiv.innerHTML = "";

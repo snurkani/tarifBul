@@ -299,7 +299,7 @@ def populer_tarifler():
         db.session.query(Favori.tarif_id, db.func.count(Favori.id).label("favori_sayisi"))
         .group_by(Favori.tarif_id)
         .order_by(db.func.count(Favori.id).desc())
-        .limit(6)
+        .limit(12)
         .all()
     )
 
