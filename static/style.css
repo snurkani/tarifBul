@@ -95,6 +95,20 @@ body {
   padding-bottom: 15px;
 
   text-align: center;
+
+  transition: transform 0.15s ease;
+}
+
+
+/* Favoriye eklendiğinde kartın yaptığı kısa zıplama animasyonu */
+@keyframes kartPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.tarif-karti.pulse {
+  animation: kartPulse 0.4s ease;
 }
 
 
@@ -121,6 +135,19 @@ body {
   cursor: pointer;
 
   border: none;
+
+  transition: background-color 0.2s ease;
+}
+
+/* Favoriye eklendikten sonra butonun geçici hali */
+.tarif-karti button.eklendi {
+  background-color: #2e7d32;
+  color: white;
+}
+
+.favori-sayaci {
+  font-size: 13px;
+  color: #777;
 }
 
 .daha-fazla-alani{
@@ -149,6 +176,13 @@ body {
   border: 1px solid #ddd;
 
   border-radius: 8px;
+}
+
+
+/* Popüler tarifler başlığı */
+#populerAlani h2 {
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 

@@ -10,6 +10,9 @@
 // API'den gelen tarifleri burada tutacağız
 let tarifler = [];
 
+// Popüler tarifler listesini burada tutacağız
+let populerListesi = [];
+
 // Favoriye eklenen tarifleri artık DB'de tutuyoruz, burada array yok.
 
 //kaç tarif atlanacağını tutacak
@@ -35,6 +38,13 @@ const tarifSayfasi = document.querySelector("#tarifSayfasi");
 const favoriSayfasi = document.querySelector("#favoriSayfasi");
 
 const dahaFazlaButon = document.querySelector("#dahaFazlaButon")
+
+const dahaFazlaAlani = document.querySelector(".daha-fazla-alani");
+
+// Popüler tarifler alanı (sayfa ilk açıldığında görünen bölüm)
+const populerAlani = document.querySelector("#populerAlani");
+
+const populerTariflerDiv = document.querySelector("#populerTarifler");
 
 // Üst menü butonları
 const tariflerButon = document.querySelector("#tariflerButon");
@@ -72,6 +82,11 @@ function tarifleriGetir(arananYemek,yeniArama) {
      offset = 0;
 
     aktifArama =arananYemek;
+
+    // Gerçek bir arama başladı: popüler bölümünü gizle, sonuç alanını göster
+    populerAlani.classList.add("gizli");
+    tariflerDiv.classList.remove("gizli");
+    dahaFazlaAlani.classList.remove("gizli");
 
     //API cevabı gelene kadar kulllanıcıya bilgi gösteriyoruz
     tariflerDiv.innerHTML ="<p> Yükleniyor...<p>";
@@ -185,13 +200,64 @@ function tarifleriGoster(liste,temizle) {
           ${Math.round(kalori)} kcal
         </p>
 
-        <button onclick="favoriyeEkle(${tarif.id})">
+        <button onclick="favoriyeEkle(${tarif.id}, this)">
           Favoriye Ekle ❤️
         </button>
 
       </div>
     `;
   });
+}
+
+
+// ----------------------------------------------------
+// 5B) POPÜLER TARİFLERİ GETİRME VE GÖSTERME
+// ----------------------------------------------------
+
+function populerTarifleriGetir() {
+
+  fetch("/api/populer-tarifler")
+    .then(function(response) {
+      return response.json();
+    })
+    .then(function(data) {
+
+      populerListesi = data;
+
+      // Henüz hiç favorilenmiş tarif yoksa bölümü göstermeye gerek yok
+      if (data.length === 0) {
+        populerAlani.classList.add("gizli");
+        return;
+      }
+
+      populerTariflerDiv.innerHTML = "";
+
+      data.forEach(function(tarif) {
+        populerTariflerDiv.innerHTML += `
+          <div class="tarif-karti">
+
+            <img src="${tarif.gorsel_url}" alt="${tarif.baslik}">
+
+            <h3>${tarif.baslik}</h3>
+
+            <p>${tarif.hazirlama_suresi} dakika</p>
+
+            <p>${Math.round(tarif.kalori)} kcal</p>
+
+            <p class="favori-sayaci">${tarif.favori_sayisi} kişi favoriledi ⭐</p>
+
+            <button onclick="populerFavoriyeEkle(${tarif.tarif_id}, this)">
+              Favoriye Ekle ❤️
+            </button>
+
+          </div>
+        `;
+      });
+    })
+    .catch(function(hata) {
+      console.log("Popüler tarifler yüklenirken hata:", hata);
+      populerAlani.classList.add("gizli");
+    });
 }
 
 
@@ -280,7 +346,8 @@ aramaInput.addEventListener("keydown", function(event) {
 // 7) FAVORİYE EKLEME (artık backend'e POST atıyor)
 // ----------------------------------------------------
 
-function favoriyeEkle(tarifId) {
+// Arama sonuçlarındaki bir tarifi favoriye eklerken çağrılır
+function favoriyeEkle(tarifId, buton) {
 
   // API'den gelen tarifler içinde seçilen tarifi buluyoruz
   const secilenTarif = tarifler.find(function(tarif) {
@@ -302,16 +369,49 @@ function favoriyeEkle(tarifId) {
     }
   }
 
+  favoriyeEklePOST({
+    tarif_id: secilenTarif.id,
+    baslik: secilenTarif.title,
+    gorsel_url: secilenTarif.image,
+    kalori: Math.round(kalori),
+    hazirlama_suresi: secilenTarif.readyInMinutes
+  }, buton);
+}
+
+
+// Popüler tarifler listesindeki bir tarifi favoriye eklerken çağrılır
+// (bu kartlarda zaten nutrition ayrıştırmaya gerek yok, veri hazır)
+function populerFavoriyeEkle(tarifId, buton) {
+
+  const secilen = populerListesi.find(function(tarif) {
+    return tarif.tarif_id === tarifId;
+  });
+
+  if (!secilen) {
+    return;
+  }
+
+  favoriyeEklePOST({
+    tarif_id: secilen.tarif_id,
+    baslik: secilen.baslik,
+    gorsel_url: secilen.gorsel_url,
+    kalori: secilen.kalori,
+    hazirlama_suresi: secilen.hazirlama_suresi
+  }, buton);
+}
+
+
+// Her iki durumda da kullanılan ortak fonksiyon:
+// backend'e POST atar, başarılıysa butonu ve kartı görsel olarak günceller
+function favoriyeEklePOST(veri, buton) {
+
+  const kart = buton.closest(".tarif-karti");
+  const eskiYazi = buton.innerHTML;
+
   fetch("/api/favoriler", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tarif_id: secilenTarif.id,
-      baslik: secilenTarif.title,
-      gorsel_url: secilenTarif.image,
-      kalori: Math.round(kalori),
-      hazirlama_suresi: secilenTarif.readyInMinutes
-    })
+    body: JSON.stringify(veri)
   })
     .then(function(response) {
       // Giriş yapılmamışsa backend 401 döner, login'e yönlendiriyoruz
@@ -321,7 +421,23 @@ function favoriyeEkle(tarifId) {
       }
       return response.json();
     })
-    .then(function() {
+    .then(function(data) {
+
+      if (!data) {
+        return;
+      }
+
+      // Görsel geri bildirim: buton metnini değiştir, kartı hafifçe zıplat
+      buton.innerHTML = (data.message === "Zaten favorilerde") ? "Zaten Favoride" : "Eklendi ✓";
+      buton.classList.add("eklendi");
+      kart.classList.add("pulse");
+
+      setTimeout(function() {
+        buton.innerHTML = eskiYazi;
+        buton.classList.remove("eklendi");
+        kart.classList.remove("pulse");
+      }, 1500);
+
       // Favoriler sekmesi açıksa listeyi tazele
       if (!favoriSayfasi.classList.contains("gizli")) {
         favorileriGoster();
@@ -470,8 +586,8 @@ favorilerButon.addEventListener("click", function() {
 // 11) SAYFA İLK AÇILDIĞINDA
 // ----------------------------------------------------
 
-// Başlangıçta örnek olarak pasta tariflerini getiriyoruz
-tarifleriGetir("pasta",true);
+// Artık rastgele bir arama yerine en çok favorilenen tarifleri gösteriyoruz
+populerTarifleriGetir();
 
 
 // ----------------------------------------------------

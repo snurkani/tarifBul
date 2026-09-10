@@ -292,6 +292,32 @@ def favoriden_sil(tarif_id):
     return jsonify({"message": "Favorilerden silindi"}), 200
 
 
+@app.route("/api/populer-tarifler")
+def populer_tarifler():
+    # Tarif bazında kaç kişi favorilemiş, grupla ve sırala
+    sayimlar = (
+        db.session.query(Favori.tarif_id, db.func.count(Favori.id).label("favori_sayisi"))
+        .group_by(Favori.tarif_id)
+        .order_by(db.func.count(Favori.id).desc())
+        .limit(6)
+        .all()
+    )
+
+    sonuc = []
+    for tarif_id, favori_sayisi in sayimlar:
+        ornek = Favori.query.filter_by(tarif_id=tarif_id).first()
+        sonuc.append({
+            "tarif_id": tarif_id,
+            "baslik": ornek.baslik,
+            "gorsel_url": ornek.gorsel_url,
+            "kalori": ornek.kalori,
+            "hazirlama_suresi": ornek.hazirlama_suresi,
+            "favori_sayisi": favori_sayisi,
+        })
+
+    return jsonify(sonuc)
+
+
 # ----------------------------------------------------
 # ADMIN PANELİ
 # ----------------------------------------------------
