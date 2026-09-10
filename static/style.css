@@ -156,3 +156,84 @@ body {
 .gizli {
   display: none;
 }
+
+
+/* Başlıktaki kullanıcı/giriş alanı */
+.kullanici-alani {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 14px;
+}
+
+.kullanici-alani a {
+  color: #333;
+  text-decoration: none;
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+
+/* Giriş / Kayıt sayfaları */
+.auth-alani {
+  max-width: 350px;
+  margin: 60px auto;
+  background-color: white;
+  padding: 25px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-form input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.auth-form button {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #333;
+  color: white;
+}
+
+.flash-mesajlar {
+  list-style: none;
+  padding: 0;
+  color: #b00020;
+  font-size: 14px;
+}
+
+
+/* Admin paneli tabloları */
+.admin-alani {
+  padding: 30px 40px;
+}
+
+.admin-tablo {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+  background-color: white;
+}
+
+.admin-tablo th,
+.admin-tablo td {
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.admin-tablo th {
+  background-color: #f0f0f0;
+}

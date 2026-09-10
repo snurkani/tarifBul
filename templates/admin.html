@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Paneli - Tarif Bul</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <header class="ust-menu">
+    <h1>Tarif Bul 🍴 — Admin Paneli</h1>
+    <a href="{{ url_for('ana_sayfa') }}">← Ana Sayfaya Dön</a>
+  </header>
+
+  <section class="admin-alani">
+
+    <h2>Kullanıcılar ({{ kullanicilar|length }})</h2>
+    <table class="admin-tablo">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Kullanıcı Adı</th>
+          <th>Rol</th>
+          <th>Kayıt Tarihi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for kullanici in kullanicilar %}
+        <tr>
+          <td>{{ kullanici.id }}</td>
+          <td>{{ kullanici.username }}</td>
+          <td>{{ kullanici.role }}</td>
+          <td>{{ kullanici.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h2>En Çok Favorilenen Tarifler</h2>
+    {% if populer_tarifler %}
+    <table class="admin-tablo">
+      <thead>
+        <tr>
+          <th>Tarif</th>
+          <th>Favori Sayısı</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tarif in populer_tarifler %}
+        <tr>
+          <td>{{ tarif.baslik }}</td>
+          <td>{{ tarif.favori_sayisi }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>Henüz favoriye eklenmiş tarif yok.</p>
+    {% endif %}
+
+  </section>
+
+</body>
+</html>

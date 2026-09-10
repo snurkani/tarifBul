@@ -242,6 +242,36 @@ def favoriden_sil(tarif_id):
     return jsonify({"message": "Favorilerden silindi"}), 200
 
 
+# ----------------------------------------------------
+# ADMIN PANELİ
+# ----------------------------------------------------
+
+@app.route("/admin")
+@login_required
+@admin_required
+def admin_paneli():
+    kullanicilar = User.query.order_by(User.created_at.desc()).all()
+
+    # Tarif bazında favori sayısını grupla (SQL GROUP BY + COUNT)
+    populer_tarifler = (
+        db.session.query(
+            Favori.tarif_id,
+            Favori.baslik,
+            db.func.count(Favori.id).label("favori_sayisi"),
+        )
+        .group_by(Favori.tarif_id, Favori.baslik)
+        .order_by(db.func.count(Favori.id).desc())
+        .limit(10)
+        .all()
+    )
+
+    return render_template(
+        "admin.html",
+        kullanicilar=kullanicilar,
+        populer_tarifler=populer_tarifler,
+    )
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()  # Modellerde tanımlı tabloları, yoksa oluşturur
