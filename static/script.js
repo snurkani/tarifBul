@@ -13,6 +13,9 @@ let tarifler = [];
 // Popüler tarifler listesini burada tutacağız
 let populerListesi = [];
 
+// Henüz hiç favori yokken gösterilen "Öne Çıkan Tarifler" listesi
+let oneCikanListesi = [];
+
 // Favoriye eklenen tarifleri artık DB'de tutuyoruz, burada array yok.
 
 //kaç tarif atlanacağını tutacak
@@ -43,6 +46,8 @@ const dahaFazlaAlani = document.querySelector(".daha-fazla-alani");
 
 // Popüler tarifler alanı (sayfa ilk açıldığında görünen bölüm)
 const populerAlani = document.querySelector("#populerAlani");
+
+const populerBaslik = document.querySelector("#populerBaslik");
 
 const populerTariflerDiv = document.querySelector("#populerTarifler");
 
@@ -222,31 +227,92 @@ function populerTarifleriGetir() {
     })
     .then(function(data) {
 
-      populerListesi = data;
-
-      // Henüz hiç favorilenmiş tarif yoksa bölümü göstermeye gerek yok
-      if (data.length === 0) {
-        populerAlani.classList.add("gizli");
-        return;
+      if (data.length > 0) {
+        // Gerçek favori verisi var: "En Çok Favorilenen" olarak göster
+        populerBaslik.innerHTML = "En Çok Favorilenen Tarifler ⭐";
+        populerListesi = data;
+        gercekPopulerleriGoster(data);
+      } else {
+        // Henüz kimse favori eklememiş: sabit bir "Öne Çıkan" listesine düş
+        populerBaslik.innerHTML = "Öne Çıkan Tarifler";
+        oneCikanlariGetir();
       }
+    })
+    .catch(function(hata) {
+      console.log("Popüler tarifler yüklenirken hata:", hata);
+    });
+}
+
+
+function gercekPopulerleriGoster(data) {
+
+  populerTariflerDiv.innerHTML = "";
+
+  data.forEach(function(tarif) {
+    populerTariflerDiv.innerHTML += `
+      <div class="tarif-karti">
+
+        <img src="${tarif.gorsel_url}" alt="${tarif.baslik}">
+
+        <h3>${tarif.baslik}</h3>
+
+        <p>${tarif.hazirlama_suresi} dakika</p>
+
+        <p>${Math.round(tarif.kalori)} kcal</p>
+
+        <p class="favori-sayaci">${tarif.favori_sayisi} kişi favoriledi ⭐</p>
+
+        <button onclick="populerFavoriyeEkle(${tarif.tarif_id}, this)">
+          Favoriye Ekle ❤️
+        </button>
+
+      </div>
+    `;
+  });
+}
+
+
+// Henüz favori yokken gösterilecek sabit "Öne Çıkan Tarifler" listesi.
+// Spoonacular'dan normal arama gibi çekiyoruz, sadece farklı bir alana basıyoruz.
+function oneCikanlariGetir() {
+
+  const sabitArama = "pasta";
+
+  fetch(`/api/tarifler?query=${sabitArama}&offset=0`)
+    .then(function(response) {
+      return response.json();
+    })
+    .then(function(data) {
+
+      const sonuclar = (data.results || []).slice(0, 6);
+      oneCikanListesi = sonuclar;
 
       populerTariflerDiv.innerHTML = "";
 
-      data.forEach(function(tarif) {
+      sonuclar.forEach(function(tarif) {
+
+        let kalori = 0;
+        if (tarif.nutrition) {
+          const kaloriBilgisi = tarif.nutrition.nutrients.find(function(besin) {
+            return besin.name === "Calories";
+          });
+          if (kaloriBilgisi) {
+            kalori = kaloriBilgisi.amount;
+          }
+        }
+
         populerTariflerDiv.innerHTML += `
           <div class="tarif-karti">
 
-            <img src="${tarif.gorsel_url}" alt="${tarif.baslik}">
+            <img src="${tarif.image}" alt="${tarif.title}">
 
-            <h3>${tarif.baslik}</h3>
+            <h3>${tarif.title}</h3>
 
-            <p>${tarif.hazirlama_suresi} dakika</p>
+            <p>${tarif.readyInMinutes} dakika</p>
 
-            <p>${Math.round(tarif.kalori)} kcal</p>
+            <p>${Math.round(kalori)} kcal</p>
 
-            <p class="favori-sayaci">${tarif.favori_sayisi} kişi favoriledi ⭐</p>
-
-            <button onclick="populerFavoriyeEkle(${tarif.tarif_id}, this)">
+            <button onclick="oneCikanFavoriyeEkle(${tarif.id}, this)">
               Favoriye Ekle ❤️
             </button>
 
@@ -255,8 +321,7 @@ function populerTarifleriGetir() {
       });
     })
     .catch(function(hata) {
-      console.log("Popüler tarifler yüklenirken hata:", hata);
-      populerAlani.classList.add("gizli");
+      console.log("Öne çıkan tarifler yüklenirken hata:", hata);
     });
 }
 
@@ -397,6 +462,37 @@ function populerFavoriyeEkle(tarifId, buton) {
     gorsel_url: secilen.gorsel_url,
     kalori: secilen.kalori,
     hazirlama_suresi: secilen.hazirlama_suresi
+  }, buton);
+}
+
+
+// "Öne Çıkan Tarifler" (henüz favori yokken gösterilen sabit liste) için
+function oneCikanFavoriyeEkle(tarifId, buton) {
+
+  const secilen = oneCikanListesi.find(function(tarif) {
+    return tarif.id === tarifId;
+  });
+
+  if (!secilen) {
+    return;
+  }
+
+  let kalori = 0;
+  if (secilen.nutrition) {
+    const kaloriBilgisi = secilen.nutrition.nutrients.find(function(besin) {
+      return besin.name === "Calories";
+    });
+    if (kaloriBilgisi) {
+      kalori = kaloriBilgisi.amount;
+    }
+  }
+
+  favoriyeEklePOST({
+    tarif_id: secilen.id,
+    baslik: secilen.title,
+    gorsel_url: secilen.image,
+    kalori: Math.round(kalori),
+    hazirlama_suresi: secilen.readyInMinutes
   }, buton);
 }
 
