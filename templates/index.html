@@ -46,6 +46,22 @@
   <!-- TARİFLER SAYFASI -->
   <section id="tarifSayfasi">
 
+    <div class="ai-asistan-alani">
+      <h3>AI Tarif Asistanı 🤖</h3>
+      <p>Elindeki malzemeleri ya da ne canının çektiğini yaz, senin için arasın.</p>
+
+      <div class="ai-form">
+        <input
+          type="text"
+          id="aiMesajInput"
+          placeholder="örn: elimde tavuk ve pilav var, ne yapabilirim?"
+        >
+        <button id="aiSorButon">Sor</button>
+      </div>
+
+      <p id="aiCevap" class="ai-cevap gizli"></p>
+    </div>
+
     <div class="arama-alani">
 
       <input
@@ -108,8 +124,8 @@
 
 
   <!-- JavaScript dosyamızı en sonda bağlıyoruz -->
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-//normal html değil falskin kullandığı jinja template sytaxı
+  <!-- normal html değil, flask'ın kullandığı jinja template syntax'ı -->
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 
 </body>
 

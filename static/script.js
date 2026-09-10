@@ -49,6 +49,11 @@ const toplamKalori = document.querySelector("#toplamKalori");
 
 const ortalamaKalori = document.querySelector("#ortalamaKalori");
 
+// AI Tarif Asistanı elementleri
+const aiMesajInput = document.querySelector("#aiMesajInput");
+const aiSorButon = document.querySelector("#aiSorButon");
+const aiCevap = document.querySelector("#aiCevap");
+
 dahaFazlaButon.addEventListener("click", function(){
 
  offset = offset + 12;
@@ -467,4 +472,65 @@ favorilerButon.addEventListener("click", function() {
 
 // Başlangıçta örnek olarak pasta tariflerini getiriyoruz
 tarifleriGetir("pasta",true);
+
+
+// ----------------------------------------------------
+// 12) AI TARİF ASİSTANI
+// ----------------------------------------------------
+
+function aiOnerisiniIste() {
+
+  const mesaj = aiMesajInput.value.trim();
+
+  if (!mesaj) {
+    return;
+  }
+
+  aiCevap.classList.remove("gizli");
+  aiCevap.innerHTML = "Düşünüyor...";
+
+  fetch("/api/ai-tarif-onerisi", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mesaj: mesaj })
+  })
+    .then(function(response) {
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return null;
+      }
+      return response.json();
+    })
+    .then(function(data) {
+
+      if (!data) {
+        return;
+      }
+
+      if (data.error) {
+        aiCevap.innerHTML = data.error;
+        return;
+      }
+
+      // AI'nin önerisini kullanıcıya gösteriyoruz
+      aiCevap.innerHTML = data.aciklama || "";
+
+      // AI'nin bulduğu arama terimiyle mevcut arama akışını tetikliyoruz
+      aramaInput.value = data.arama_terimi;
+      tarifleriGetir(data.arama_terimi, true);
+    })
+    .catch(function(hata) {
+      aiCevap.innerHTML = "Bir hata oluştu, tekrar dene.";
+      console.log("AI asistanı hatası:", hata);
+    });
+}
+
+aiSorButon.addEventListener("click", aiOnerisiniIste);
+
+// Enter tuşuyla da sorulabilsin
+aiMesajInput.addEventListener("keydown", function(event) {
+  if (event.key === "Enter") {
+    aiOnerisiniIste();
+  }
+});
 

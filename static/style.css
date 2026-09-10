@@ -237,3 +237,46 @@ body {
 .admin-tablo th {
   background-color: #f0f0f0;
 }
+
+
+/* AI Tarif Asistanı kutusu */
+.ai-asistan-alani {
+  max-width: 600px;
+  margin: 0 auto 30px auto;
+  background-color: white;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.ai-asistan-alani h3 {
+  margin-top: 0;
+}
+
+.ai-form {
+  display: flex;
+  gap: 10px;
+}
+
+.ai-form input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.ai-form button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #333;
+  color: white;
+}
+
+.ai-cevap {
+  margin-top: 15px;
+  font-style: italic;
+  color: #444;
+}

@@ -1,10 +1,12 @@
 import os
+import json
 from functools import wraps
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests #fetch() yerine requests.get() kullanıyoruz
+import anthropic
 
 from models import db, User, Favori
 
@@ -19,6 +21,8 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 
 API_KEY = os.environ.get("SPOONACULAR_API_KEY")
+
+claude_client = anthropic.Anthropic(api_key=os.environ.get("CLAUDE_API_KEY"))
 
 
 # ----------------------------------------------------
@@ -171,6 +175,52 @@ def tarifleri_getir():
     data = response.json()# js benzer ama promise döndürmüyor normal sonucu döndürüyor, senkron çalışıyor
 
     return jsonify(data)# flaskten js ye json cevap döndürüyor
+
+
+# ----------------------------------------------------
+# AI TARİF ASİSTANI (Claude API entegrasyonu)
+# ----------------------------------------------------
+
+@app.route("/api/ai-tarif-onerisi", methods=["POST"])
+@api_login_required
+def ai_tarif_onerisi():
+    veri = request.get_json()
+    kullanici_metni = (veri or {}).get("mesaj", "").strip()
+
+    if not kullanici_metni:
+        return jsonify({"error": "Mesaj boş olamaz"}), 400
+
+    try:
+        # Claude'a kullanıcının serbest metnini kısa bir arama terimine
+        # çevirmesini istiyoruz; Spoonacular İngilizce terimlerle daha iyi çalışıyor.
+        cevap = claude_client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=200,
+            system=(
+                "Sen bir yemek tarifi arama asistanısın. Kullanıcı elindeki "
+                "malzemeleri ya da ne yemek istediğini anlatıyor. Görevin bu "
+                "isteği bir tarif arama motoruna gönderilecek KISA bir arama "
+                "terimine çevirmek (1-3 kelime, İngilizce yemek/malzeme adı). "
+                "SADECE şu JSON formatında cevap ver, başka hiçbir metin ekleme: "
+                '{"arama_terimi": "...", "aciklama": "kullanıcıya gösterilecek, '
+                'Türkçe, tek cümlelik dostane bir öneri metni"}'
+            ),
+            messages=[{"role": "user", "content": kullanici_metni}],
+        )
+
+        ham_metin = cevap.content[0].text.strip()
+        ham_metin = ham_metin.replace("```json", "").replace("```", "").strip()
+
+        ayristirilan = json.loads(ham_metin)
+
+        return jsonify({
+            "arama_terimi": ayristirilan.get("arama_terimi", kullanici_metni),
+            "aciklama": ayristirilan.get("aciklama", ""),
+        })
+
+    except Exception as hata:
+        print("Claude API hatası:", hata)
+        return jsonify({"error": "AI asistanı şu an yanıt veremedi, lütfen tekrar dene."}), 500
 
 
 # ----------------------------------------------------
