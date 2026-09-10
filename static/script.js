@@ -24,6 +24,13 @@ let offset =0
 //hangi yemeği aradığımızı hatırlayacak
 let aktifArama = "pasta"
 
+// Öne Çıkan Tarifler için ayrı bir offset (arama offset'inden bağımsız)
+let oneCikanOffset = 0;
+
+// Şu an "Daha Fazla Göster" butonunun hangi listeyi büyüteceğini tutar:
+// "arama" | "oneCikan" | "populer"
+let aktifMod = "";
+
 // ----------------------------------------------------
 // 3) HTML ELEMENTLERİNİ SEÇİYORUZ
 // ----------------------------------------------------
@@ -71,8 +78,14 @@ const aiCevap = document.querySelector("#aiCevap");
 
 dahaFazlaButon.addEventListener("click", function(){
 
- offset = offset + 12;
- tarifleriGetir(aktifArama,false)
+  if (aktifMod === "arama") {
+    offset = offset + 12;
+    tarifleriGetir(aktifArama, false);
+
+  } else if (aktifMod === "oneCikan") {
+    oneCikanOffset = oneCikanOffset + 12;
+    oneCikanlariGetir(false);
+  }
 
 })
  
@@ -87,6 +100,7 @@ function tarifleriGetir(arananYemek,yeniArama) {
      offset = 0;
 
     aktifArama =arananYemek;
+    aktifMod = "arama";
 
     // Gerçek bir arama başladı: popüler bölümünü gizle, sonuç alanını göster
     populerAlani.classList.add("gizli");
@@ -231,11 +245,13 @@ function populerTarifleriGetir() {
         // Gerçek favori verisi var: "En Çok Favorilenen" olarak göster
         populerBaslik.innerHTML = "En Çok Favorilenen Tarifler ⭐";
         populerListesi = data;
+        aktifMod = "populer";
+        dahaFazlaAlani.classList.add("gizli"); // favori listesi sabit, sayfalama yok
         gercekPopulerleriGoster(data);
       } else {
         // Henüz kimse favori eklememiş: sabit bir "Öne Çıkan" listesine düş
         populerBaslik.innerHTML = "Öne Çıkan Tarifler";
-        oneCikanlariGetir();
+        oneCikanlariGetir(true);
       }
     })
     .catch(function(hata) {
@@ -274,22 +290,30 @@ function gercekPopulerleriGoster(data) {
 
 // Henüz favori yokken gösterilecek sabit "Öne Çıkan Tarifler" listesi.
 // Spoonacular'dan normal arama gibi çekiyoruz, sadece farklı bir alana basıyoruz.
-function oneCikanlariGetir() {
+// yeniListe=true: listeyi sıfırdan yükler. false: mevcut listenin devamını ekler (Daha Fazla Göster).
+function oneCikanlariGetir(yeniListe) {
 
   const sabitArama = "pasta";
 
-  fetch(`/api/tarifler?query=${sabitArama}&offset=0`)
+  if (yeniListe) {
+    aktifMod = "oneCikan";
+    oneCikanOffset = 0;
+    oneCikanListesi = [];
+    populerTariflerDiv.innerHTML = "";
+    dahaFazlaAlani.classList.remove("gizli");
+  }
+
+  fetch(`/api/tarifler?query=${sabitArama}&offset=${oneCikanOffset}`)
     .then(function(response) {
       return response.json();
     })
     .then(function(data) {
 
-      const sonuclar = data.results || [];
-      oneCikanListesi = sonuclar;
+      const yeniSonuclar = data.results || [];
 
-      populerTariflerDiv.innerHTML = "";
+      oneCikanListesi = oneCikanListesi.concat(yeniSonuclar);
 
-      sonuclar.forEach(function(tarif) {
+      yeniSonuclar.forEach(function(tarif) {
 
         let kalori = 0;
         if (tarif.nutrition) {
